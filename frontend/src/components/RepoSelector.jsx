@@ -11,17 +11,14 @@ export default function RepoSelector({ onSelect }){
     setLoading(true);
     const token = localStorage.getItem('token');
     if (!token) {
-      setError('Please login or use Demo Login');
+      setError('Please login to view repositories');
       setLoading(false);
       return;
     }
     axios.get('/api/github/repos', { headers: { Authorization: `Bearer ${token}` } })
       .then(res => setRepos(res.data))
       .catch(err => {
-        // on failure, try dev repos
-        axios.get('/dev/repos')
-          .then(r => setRepos(r.data))
-          .catch(e => setError(e.response?.data?.error || e.message));
+        setError(err.response?.data?.error || err.message);
       })
       .finally(() => setLoading(false));
   }, []);

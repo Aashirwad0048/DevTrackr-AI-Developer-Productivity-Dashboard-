@@ -15,6 +15,7 @@ export default function Dashboard(){
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [publicRepoInput, setPublicRepoInput] = useState('');
 
   const handleSelect = async (repo) => {
     setSelectedRepo(repo);
@@ -28,17 +29,32 @@ export default function Dashboard(){
       const res = await axios.get(`/api/analytics/repo/${repo.owner}/${repo.name}`, { headers: { Authorization: `Bearer ${token}` } });
       setAnalytics(res.data);
     } catch (err) {
-      // try dev analytics fallback
-      try {
-        const dev = await axios.get(`/dev/analytics/${repo.owner}/${repo.name}`);
-        setAnalytics(dev.data);
-      } catch (e) {
-        setError(err.response?.data?.error || err.message);
-      }
+      setError(err.response?.data?.error || err.message);
     } finally {
       setLoading(false);
     }
   }
+
+  const handlePublicAnalyze = (e) => {
+    e.preventDefault();
+    if (!publicRepoInput) {
+      setError('Please enter a valid repository (e.g. facebook/react or https://github.com/facebook/react)');
+      return;
+    }
+
+    let cleaned = publicRepoInput.trim();
+    cleaned = cleaned.replace("https://github.com/", "").replace("http://github.com/", "");
+    const parts = cleaned.split('/');
+
+    if (parts.length < 2) {
+      setError('Please enter a valid format: owner/repo (e.g. facebook/react)');
+      return;
+    }
+
+    const owner = parts[0];
+    const name = parts[1];
+    handleSelect({ owner: owner.trim(), name: name.trim(), full_name: `${owner.trim()}/${name.trim()}` });
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
@@ -46,11 +62,24 @@ export default function Dashboard(){
       <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
         <Navbar />
         <main className="mx-auto w-full max-w-7xl p-6">
-        <div className="flex items-center justify-between gap-4">
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <div className="flex items-center gap-3">
-            <ConnectGitHub />
-            <RepoSelector onSelect={handleSelect} />
+          <div className="flex flex-col items-end gap-3 md:flex-row md:items-center">
+            <form onSubmit={handlePublicAnalyze} className="flex w-full items-center gap-2 md:w-auto">
+              <input 
+                type="text" 
+                placeholder="owner/repo (e.g., vercel/next.js)" 
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-indigo-400 md:w-64"
+                value={publicRepoInput}
+                onChange={(e) => setPublicRepoInput(e.target.value)}
+              />
+              <button type="submit" className="shrink-0 rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">Analyze</button>
+            </form>
+            <div className="hidden h-6 w-px bg-slate-300 dark:bg-slate-700 md:block"></div>
+            <div className="flex w-full items-center gap-3 md:w-auto">
+              <ConnectGitHub />
+              <RepoSelector onSelect={handleSelect} />
+            </div>
           </div>
         </div>
 
@@ -102,8 +131,8 @@ export default function Dashboard(){
           )}
         </section>
 
-        <section className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+        <section className="mt-8 flex flex-col gap-8">
+          <div className="w-full">
             {loading ? <ChartSkeleton /> : analytics ? <CommitChart data={analytics.commitFrequency} /> : <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 text-sm text-slate-500">No chart data</div>}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               {loading ? (
@@ -120,10 +149,10 @@ export default function Dashboard(){
             </div>
           </div>
 
-          <aside>
+          <div className="w-full">
             {selectedRepo && <AIInsights repo={selectedRepo} />}
             {loading && !selectedRepo && <div className="mt-4"><InsightSkeleton /></div>}
-          </aside>
+          </div>
         </section>
         </main>
       </div>

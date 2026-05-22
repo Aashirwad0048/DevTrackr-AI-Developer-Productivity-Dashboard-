@@ -36,51 +36,211 @@ async function generateInsights(analytics, owner, repo) {
       summary: data?.sprintSummary
         ? `${repoName}: ${data.sprintSummary}`
         : `${repoName}: Analytics show ${commitCount} commits across ${Array.isArray(data?.commitFrequency) ? data.commitFrequency.length : 0} tracked days.`,
-      bottlenecks: bottlenecks.length > 0 ? bottlenecks : ['No obvious bottlenecks detected from the available analytics.'],
-      recommendations,
       projectHealth: openPRTitles.length === 0 && openIssueTitles.length === 0 ? 'Stable' : 'Needs attention',
       sprintStatus: data?.sprint?.sprintProgress != null ? `${data.sprint.sprintProgress}% complete` : 'Unknown',
-      technicalRisks: openPRTitles.length > 0 || openIssueTitles.length > 0 ? ['Backlog items may delay the next sprint.'] : [],
+      commitAnalysis: `Commits observed over the tracked period.`,
+      pullRequestAnalysis: `Open PRs: ${openPRTitles.length}`,
+      issueAnalysis: `Open Issues: ${openIssueTitles.length}`,
       contributorInsights: latestCommits.length > 0
         ? latestCommits.map(message => `Recent work includes: ${message}`)
         : (inactive.length > 0
           ? inactive.map(name => `${name} may need follow-up or task redistribution.`)
-          : ['Contributor activity is balanced across the tracked period.'])
+          : ['Contributor activity is balanced across the tracked period.']),
+      bottlenecks: bottlenecks.length > 0 ? bottlenecks : ['No obvious bottlenecks detected from the available analytics.'],
+      recommendations,
+      technicalRisks: openPRTitles.length > 0 || openIssueTitles.length > 0 ? ['Backlog items may delay the next sprint.'] : []
     };
   };
 
   const apiKey = process.env.GEMINI_API_KEY || process.env.GEN_AI_KEY || process.env.OPENAI_API_KEY;
-  const prompt = `You are an expert software engineering analyst.
+  const prompt = `You are DevTrackr AI — an advanced software engineering productivity analyst.
 
-Analyze ONLY this GitHub repository.
+Your role is to analyze GitHub repository activity and generate professional repository-level engineering insights.
+
+IMPORTANT:
+- Analyze ONLY the provided repository.
+- NEVER generate generic GitHub profile advice.
+- NEVER generate vague motivational feedback.
+- Focus ONLY on repository engineering activity, sprint health, contributor productivity, technical bottlenecks, and development workflow.
+
+Your analysis must reference:
+- specific modules (extracted from commit/PR/issue titles)
+- commit patterns
+- issue categories
+- pull request themes
+- repository workflows
+
+Every recommendation must be tied to repository evidence. Do NOT give generic software advice.
+
+You are analyzing a real software project repository using:
+- commits
+- pull requests
+- issues
+- contributors
+- sprint progress
+- code activity
+- development velocity
+
+--------------------------------------------------
+PROJECT CONTEXT
+--------------------------------------------------
+
+DevTrackr is an AI-powered developer productivity dashboard.
+
+Core Features:
+1. User Authentication
+   - Signup/Login
+   - JWT authentication
+   - Secure sessions
+
+2. GitHub Integration
+   - Connect GitHub repositories
+   - Fetch commits
+   - Fetch issues
+   - Fetch pull requests
+   - Fetch contributors
+
+3. AI Productivity Analysis
+   - AI summarizes commits
+   - Detect inactive contributors
+   - Sprint progress analysis
+   - Development velocity tracking
+   - Contributor workload analysis
+
+4. Dashboard Visualization
+   - Commit charts
+   - Pull request analytics
+   - Issue tracking
+   - Sprint analytics
+   - Contributor activity graphs
+
+5. AI Recommendations
+   - Suggest task prioritization
+   - Detect technical bottlenecks
+   - Detect workflow inefficiencies
+   - Suggest sprint improvements
+   - Highlight project risks
+
+6. Export Reports
+   - Generate downloadable PDF sprint summaries
+   - Include analytics and AI recommendations
+
+--------------------------------------------------
+ANALYSIS REQUIREMENTS
+--------------------------------------------------
+
+Your analysis MUST include:
+
+1. Sprint Summary
+- Analyze overall project progress
+- Identify whether sprint velocity is improving or slowing
+- Mention backend/frontend/devops progress if inferable
+
+2. Commit Analysis
+- Analyze commit frequency
+- Detect productivity spikes or inactivity
+- Identify unstable development patterns
+
+3. Pull Request Analysis
+- Detect PR backlog
+- Identify delayed reviews
+- Analyze merge efficiency
+- Mention unresolved pull requests
+
+4. Issue Analysis
+- Analyze open vs closed issues
+- Detect unresolved blockers
+- Mention bug accumulation trends
+
+5. Contributor Analysis
+- Detect inactive contributors
+- Detect overloaded contributors
+- Analyze collaboration effectiveness
+- Identify uneven workload distribution
+
+6. Technical Bottlenecks
+For every technical issue or bottleneck identified:
+1. Explain what happened (using concrete evidence)
+2. Explain why it matters
+3. Explain the engineering impact
+4. Suggest a concrete technical action
+
+Example bottlenecks to look out for:
+- authentication delays
+- CI/CD incomplete
+- backend integration pending
+- excessive unresolved issues
+- delayed reviews
+- missing testing coverage
+
+7. AI Recommendations
+Provide actionable engineering recommendations such as:
+- prioritize issue resolution
+- increase PR review frequency
+- improve testing
+- refactor unstable modules
+- reduce technical debt
+- improve CI/CD reliability
+
+--------------------------------------------------
+VERY IMPORTANT RULES
+--------------------------------------------------
+
+- NEVER hallucinate technologies not present in the repository.
+- NEVER invent contributors.
+- NEVER generate fake sprint progress.
+- If repository activity is too low, explicitly state:
+  "Repository activity is insufficient for meaningful analysis."
+
+- Use repository data ONLY.
+- Focus on engineering workflow and software delivery quality.
+
+--------------------------------------------------
+OUTPUT FORMAT
+--------------------------------------------------
+
+Return ONLY valid JSON using the following exact structure:
+
+{
+  "summary": "overall sprint summary",
+  "projectHealth": "Stable or Needs attention",
+  "sprintStatus": "percentage or status",
+  "commitAnalysis": "detailed commit analysis",
+  "pullRequestAnalysis": "detailed PR analysis",
+  "issueAnalysis": "detailed issue analysis",
+  "contributorInsights": [
+    {
+      "contributor": "name",
+      "insight": "insight"
+    }
+  ],
+  "bottlenecks": [
+    {
+      "issue": "issue name",
+      "impact": "impact description",
+      "solution": "concrete action"
+    }
+  ],
+  "recommendations": [
+    "recommendation 1",
+    "recommendation 2"
+  ],
+  "technicalRisks": [
+    {
+      "risk": "risk name",
+      "consequence": "consequence description"
+    }
+  ]
+}
+
+--------------------------------------------------
+REPOSITORY DATA
+--------------------------------------------------
 
 Repository:
 ${repoName}
 
-Focus ONLY on:
-- project progress
-- sprint completion
-- code bottlenecks
-- unresolved pull requests
-- issue resolution
-- contributor effectiveness
-- development velocity
-- technical risks
-
-Do NOT give profile-level advice.
-
-Return ONLY valid JSON:
-
-{
-  "summary": "",
-  "bottlenecks": [],
-  "recommendations": [],
-  "projectHealth": "",
-  "sprintStatus": "",
-  "technicalRisks": []
-}
-
-Repository Analytics:
+Analytics:
 ${JSON.stringify(analytics, null, 2)}
 `;
 
@@ -150,12 +310,15 @@ ${JSON.stringify(analytics, null, 2)}
       const parsed = JSON.parse(cleaned);
       return {
         summary: parsed.summary || '',
-        bottlenecks: parsed.bottlenecks || [],
-        recommendations: parsed.recommendations || [],
         projectHealth: parsed.projectHealth || '',
         sprintStatus: parsed.sprintStatus || '',
-        technicalRisks: parsed.technicalRisks || [],
-        contributorInsights: parsed.contributorInsights || []
+        commitAnalysis: parsed.commitAnalysis || '',
+        pullRequestAnalysis: parsed.pullRequestAnalysis || '',
+        issueAnalysis: parsed.issueAnalysis || '',
+        contributorInsights: parsed.contributorInsights || [],
+        bottlenecks: parsed.bottlenecks || [],
+        recommendations: parsed.recommendations || [],
+        technicalRisks: parsed.technicalRisks || []
       };
     } catch (e) {
       const jsonStart = cleaned.indexOf('{');
@@ -165,12 +328,15 @@ ${JSON.stringify(analytics, null, 2)}
           const parsed = JSON.parse(jsonText);
           return {
             summary: parsed.summary || '',
-            bottlenecks: parsed.bottlenecks || [],
-            recommendations: parsed.recommendations || [],
             projectHealth: parsed.projectHealth || '',
             sprintStatus: parsed.sprintStatus || '',
-            technicalRisks: parsed.technicalRisks || [],
-            contributorInsights: parsed.contributorInsights || []
+            commitAnalysis: parsed.commitAnalysis || '',
+            pullRequestAnalysis: parsed.pullRequestAnalysis || '',
+            issueAnalysis: parsed.issueAnalysis || '',
+            contributorInsights: parsed.contributorInsights || [],
+            bottlenecks: parsed.bottlenecks || [],
+            recommendations: parsed.recommendations || [],
+            technicalRisks: parsed.technicalRisks || []
           };
         } catch (e2) {}
       }
