@@ -41,7 +41,11 @@
 
 <div align="center">
 
-<video src="files/demo.mp4" autoplay loop muted playsinline controls width="100%"></video>
+<a href="https://youtu.be/GhXxgXL_T4A">
+  <img src="https://img.youtube.com/vi/GhXxgXL_T4A/maxresdefault.jpg" alt="Click to Watch DevTrackr Demo" width="750" />
+</a>
+<br/><br/>
+<strong><a href="https://youtu.be/GhXxgXL_T4A">🎬 Click here to watch the full demo video on YouTube</a></strong>
 
 </div>
 
