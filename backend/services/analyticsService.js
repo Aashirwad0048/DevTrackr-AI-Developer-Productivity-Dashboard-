@@ -1,4 +1,5 @@
 const githubService = require('./githubService');
+const cache = require('../utils/cache');
 
 function toDateKey(iso) {
   const d = new Date(iso);
@@ -9,7 +10,6 @@ function toDateKey(iso) {
 }
 
 async function calculateCommitFrequency(commits) {
-  // group commits by date (UTC)
   const map = {};
   (commits || []).forEach(c => {
     const date = c.commit?.author?.date || c.commit?.committer?.date || c.author?.date;
@@ -22,7 +22,6 @@ async function calculateCommitFrequency(commits) {
 }
 
 async function detectInactiveContributors(commits, daysThreshold = 14) {
-  // Determine last commit date per author (use author.login or commit.author.name)
   const last = {};
   (commits || []).forEach(c => {
     const when = c.commit?.author?.date || c.commit?.committer?.date;
@@ -49,7 +48,6 @@ async function calculatePRMetrics(pulls) {
 }
 
 async function calculateIssueMetrics(issues) {
-  // filter out pull requests that appear in issues list
   const pureIssues = (issues || []).filter(i => !i.pull_request);
   const total = pureIssues.length;
   const open = pureIssues.filter(i => i.state === 'open').length;
@@ -66,7 +64,6 @@ async function generateSprintProgress({ mergedPRs = 0, closedIssues = 0, totalPR
 }
 
 async function processRepoAnalytics(token, owner, repo, opts = {}) {
-  // fetch raw data from GitHub
   const per_page = opts.per_page || 100;
   const [commits, pulls, issues] = await Promise.all([
     githubService.getRepoCommits(token, owner, repo, per_page),
@@ -78,7 +75,12 @@ async function processRepoAnalytics(token, owner, repo, opts = {}) {
   const inactive = await detectInactiveContributors(commits, opts.inactiveDays || 14);
   const prMetrics = await calculatePRMetrics(pulls);
   const issueMetrics = await calculateIssueMetrics(issues);
-  const sprint = await generateSprintProgress({ mergedPRs: prMetrics.mergedPRs, closedIssues: issueMetrics.closedIssues, totalPRs: prMetrics.totalPRs, totalIssues: issueMetrics.totalIssues });
+  const sprint = await generateSprintProgress({
+    mergedPRs: prMetrics.mergedPRs,
+    closedIssues: issueMetrics.closedIssues,
+    totalPRs: prMetrics.totalPRs,
+    totalIssues: issueMetrics.totalIssues
+  });
 
   return {
     commitFrequency: commitFreq.dailyCommits,
@@ -90,22 +92,24 @@ async function processRepoAnalytics(token, owner, repo, opts = {}) {
   };
 }
 
+async function getRepoAnalyticsWithCache(token, owner, repo, opts = {}) {
+  const per_page = opts.per_page || 100;
+  const inactiveDays = opts.inactiveDays || 14;
+  const cacheKey = `analytics_${owner}_${repo}_${per_page}_${inactiveDays}`;
+  const cached = cache.get(cacheKey);
+  if (cached) return cached;
+
+  const analytics = await processRepoAnalytics(token, owner, repo, opts);
+  cache.set(cacheKey, analytics);
+  return analytics;
+}
+
 module.exports = {
   calculateCommitFrequency,
   detectInactiveContributors,
   calculatePRMetrics,
   calculateIssueMetrics,
   generateSprintProgress,
-  processRepoAnalytics
-};
-const Analytics = require('../models/Analytics');
-
-exports.getAnalyticsForRepo = async (repoId) => {
-  return Analytics.findOne({ repoId });
-};
-
-exports.generateAnalytics = async (payload) => {
-  // placeholder: process payload (commits, prs, issues) and store analysis
-  const doc = await Analytics.create(payload);
-  return doc;
+  processRepoAnalytics,
+  getRepoAnalyticsWithCache
 };

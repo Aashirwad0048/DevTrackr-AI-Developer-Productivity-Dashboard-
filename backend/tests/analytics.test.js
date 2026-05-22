@@ -6,7 +6,8 @@ jest.mock('../middleware/authMiddleware', () => (req, res, next) => {
 jest.mock('../services/analyticsService', () => ({
   getAnalyticsForRepo: jest.fn(),
   generateAnalytics: jest.fn(),
-  processRepoAnalytics: jest.fn()
+  processRepoAnalytics: jest.fn(),
+  getRepoAnalyticsWithCache: jest.fn()
 }));
 
 const request = require('supertest');
@@ -19,7 +20,7 @@ describe('Analytics route', () => {
   });
 
   test('GET /api/analytics/repo/:owner/:repo returns processed metrics', async () => {
-    analyticsService.processRepoAnalytics.mockResolvedValue({
+    analyticsService.getRepoAnalyticsWithCache.mockResolvedValue({
       commitFrequency: [{ date: '2026-05-20', count: 8 }],
       inactiveContributors: ['johnDoe'],
       prMetrics: { openPRs: 5, mergedPRs: 18, closedPRs: 23, totalPRs: 23, prCompletionRate: 78 },
@@ -31,6 +32,6 @@ describe('Analytics route', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.sprint.sprintProgress).toBe(68);
-    expect(analyticsService.processRepoAnalytics).toHaveBeenCalledWith('github-token', 'devtrackr', 'demo', { per_page: 100 });
+    expect(analyticsService.getRepoAnalyticsWithCache).toHaveBeenCalledWith('github-token', 'devtrackr', 'demo', { per_page: 100 });
   });
 });

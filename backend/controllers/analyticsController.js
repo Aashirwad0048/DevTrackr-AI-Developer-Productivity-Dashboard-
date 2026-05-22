@@ -21,7 +21,7 @@ exports.generateRepoAnalytics = async (req, res) => {
     const { owner, repo } = req.params;
     const token = req.user?.githubToken || req.query.token;
     if (!token) return res.status(401).json({ error: 'No GitHub token' });
-    const data = await analyticsService.processRepoAnalytics(token, owner, repo, { per_page: 100 });
+    const data = await analyticsService.getRepoAnalyticsWithCache(token, owner, repo, { per_page: 100 });
     return res.json(data);
   } catch (err) {
     if (err.response?.status === 401) return res.status(401).json({ error: 'GitHub token expired' });

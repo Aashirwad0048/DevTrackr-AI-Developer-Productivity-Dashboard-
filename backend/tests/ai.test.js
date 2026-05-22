@@ -4,7 +4,8 @@ jest.mock('../middleware/authMiddleware', () => (req, res, next) => {
 });
 
 jest.mock('../services/analyticsService', () => ({
-  processRepoAnalytics: jest.fn()
+  processRepoAnalytics: jest.fn(),
+  getRepoAnalyticsWithCache: jest.fn()
 }));
 
 jest.mock('../services/aiService', () => ({
@@ -22,7 +23,7 @@ describe('AI insights route', () => {
   });
 
   test('GET /api/ai/insights/:owner/:repo returns analytics and insights', async () => {
-    analyticsService.processRepoAnalytics.mockResolvedValue({
+    analyticsService.getRepoAnalyticsWithCache.mockResolvedValue({
       commitFrequency: [{ date: '2026-05-20', count: 8 }],
       prMetrics: { openPRs: 5 },
       issueMetrics: { openIssues: 7 }
@@ -39,5 +40,6 @@ describe('AI insights route', () => {
     expect(response.status).toBe(200);
     expect(response.body.insights.summary).toBe('Backend sprint improved');
     expect(aiService.generateInsights).toHaveBeenCalled();
+    expect(analyticsService.getRepoAnalyticsWithCache).toHaveBeenCalledWith('github-token', 'devtrackr', 'demo', { per_page: 100 });
   });
 });
