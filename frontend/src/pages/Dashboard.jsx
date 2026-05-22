@@ -5,12 +5,12 @@ import ConnectGitHub from '../components/ConnectGitHub'
 import RepoSelector from '../components/RepoSelector'
 import axios from '../api/axios'
 import AIInsights from '../components/AIInsights'
+import PRChart from '../components/PRChart'
+import IssueChart from '../components/IssueChart'
 
 export default function Dashboard(){
   const [selectedRepo, setSelectedRepo] = useState(null);
-  const [commits, setCommits] = useState([]);
-  const [pulls, setPulls] = useState([]);
-  const [issues, setIssues] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -23,15 +23,8 @@ export default function Dashboard(){
 
     setLoading(true);
     try {
-      const [commitsRes, pullsRes, issuesRes] = await Promise.all([
-        axios.get(`/api/github/commits/${repo.owner}/${repo.name}`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`/api/github/pulls/${repo.owner}/${repo.name}`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`/api/github/issues/${repo.owner}/${repo.name}`, { headers: { Authorization: `Bearer ${token}` } })
-      ]);
-
-      setCommits(commitsRes.data.commits || []);
-      setPulls(pullsRes.data.pulls || []);
-      setIssues(issuesRes.data.issues || []);
+      const res = await axios.get(`/api/analytics/repo/${repo.owner}/${repo.name}`, { headers: { Authorization: `Bearer ${token}` } });
+      setAnalytics(res.data);
     } catch (err) {
       setError(err.response?.data?.error || err.message);
     } finally {
@@ -51,19 +44,19 @@ export default function Dashboard(){
 
         {error && <div style={{color:'red'}}>Error: {error}</div>}
 
-        {selectedRepo && (
+        {selectedRepo && analytics && (
           <div style={{display:'flex', gap:20, marginTop:12}}>
             <div style={{padding:12, border:'1px solid #ddd'}}>
               <strong>Total Commits</strong>
-              <div>{commits.length}</div>
+              <div>{analytics.commitFrequency ? analytics.commitFrequency.reduce((s,d)=>s+d.count,0) : 0}</div>
             </div>
             <div style={{padding:12, border:'1px solid #ddd'}}>
               <strong>Open PRs</strong>
-              <div>{pulls.filter(p=>p.state==='open').length}</div>
+              <div>{analytics.prMetrics?.openPRs || 0}</div>
             </div>
             <div style={{padding:12, border:'1px solid #ddd'}}>
               <strong>Open Issues</strong>
-              <div>{issues.filter(i=>i.state==='open' && !i.pull_request).length}</div>
+              <div>{analytics.issueMetrics?.openIssues || 0}</div>
             </div>
           </div>
         )}
@@ -71,8 +64,17 @@ export default function Dashboard(){
         {selectedRepo && (
           <AIInsights repo={selectedRepo} />
         )}
-
-        {loading ? <div>Loading repo data...</div> : <CommitChart commits={commits} />}
+        {loading ? <div>Loading repo data...</div> : (
+          analytics ? (
+            <>
+              <CommitChart data={analytics.commitFrequency} />
+              <div style={{display:'flex', gap:20, marginTop:20}}>
+                <PRChart prMetrics={analytics.prMetrics} />
+                <IssueChart issueMetrics={analytics.issueMetrics} />
+              </div>
+            </>
+          ) : <div>Select a repository to view analytics.</div>
+        )}
       </main>
     </div>
   )
