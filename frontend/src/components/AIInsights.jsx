@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import axios from '../api/axios'
+import { InsightSkeleton } from './Skeletons'
 
 export default function AIInsights({ repo }){
 	const [insights, setInsights] = useState(null);
@@ -32,45 +33,45 @@ export default function AIInsights({ repo }){
 	}, [repo]);
 
 	if (!repo) return null;
-	if (loadingAI) return <div style={{marginTop:12}}>Loading AI insights...</div>;
-	if (error) return <div style={{color:'red', marginTop:12}}>AI Error: {error}</div>;
+	if (loadingAI) return <div className="mt-4"><InsightSkeleton /></div>;
+	if (error) return <div className="mt-4 text-sm text-red-600">AI Error: {error}</div>;
 	if (!insights) return null;
 
 	const { summary, bottlenecks = [], recommendations = [], contributorInsights = [] } = insights;
 
 	return (
-		<section style={{marginTop:16, padding:12, border:'1px solid #e5e7eb', borderRadius:8, background:'#fff'}}>
-			<h2 style={{margin:0, marginBottom:8}}>AI Insights</h2>
+		<section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+			<h2 className="text-lg font-semibold">AI Insights</h2>
 			{summary && (
-				<div style={{marginBottom:12}}>
-					<strong>Sprint Summary</strong>
-					<p style={{margin:6}}>{summary}</p>
+				<div className="mt-3">
+					<div className="text-sm text-slate-500">Sprint Summary</div>
+					<p className="mt-2 text-sm">{summary}</p>
 				</div>
 			)}
 
 			{bottlenecks.length > 0 && (
-				<div style={{marginBottom:12}}>
-					<strong>Bottlenecks</strong>
-					<ul>
-						{bottlenecks.map((b,i) => <li key={i}>{b}</li>)}
+				<div className="mt-4">
+					<div className="text-sm text-slate-500">Bottlenecks</div>
+					<ul className="list-disc list-inside mt-2">
+						{bottlenecks.map((b,i) => <li key={i} className="text-sm">{b}</li>)}
 					</ul>
 				</div>
 			)}
 
 			{recommendations.length > 0 && (
-				<div style={{marginBottom:12}}>
-					<strong>Recommendations</strong>
-					<ul>
-						{recommendations.map((r,i) => <li key={i}>{r}</li>)}
+				<div className="mt-4">
+					<div className="text-sm text-slate-500">Recommendations</div>
+					<ul className="list-disc list-inside mt-2">
+						{recommendations.map((r,i) => <li key={i} className="text-sm">{r}</li>)}
 					</ul>
 				</div>
 			)}
 
 			{contributorInsights.length > 0 && (
-				<div>
-					<strong>Contributor Insights</strong>
-					<ul>
-						{contributorInsights.map((c,i) => <li key={i}>{c}</li>)}
+				<div className="mt-4">
+					<div className="text-sm text-slate-500">Contributor Insights</div>
+					<ul className="list-disc list-inside mt-2">
+						{contributorInsights.map((c,i) => <li key={i} className="text-sm">{c}</li>)}
 					</ul>
 				</div>
 			)}
