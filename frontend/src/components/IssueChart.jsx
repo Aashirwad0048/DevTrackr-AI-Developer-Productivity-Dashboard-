@@ -10,7 +10,7 @@ export default function IssueChart({ issueMetrics = {} }){
     <section style={{width:'100%', maxWidth:600, marginTop:10}}>
       <h3>Issue Resolution</h3>
       <div style={{width: '100%', height: 250}}>
-        <ResponsiveContainer>
+        <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />

@@ -13,9 +13,10 @@ exports.getInsightsForRepo = async (req, res) => {
     if (cached) return res.json(cached);
 
     const analytics = await analyticsService.getRepoAnalyticsWithCache(token, owner, repo, { per_page: 100 });
-    const insights = await aiService.generateInsights(analytics);
+    const insights = await aiService.generateInsights(analytics, owner, repo);
     const response = { analytics, insights };
-    cache.set(cacheKey, response);
+    // Cache AI responses for 6 hours to avoid excessive Gemini calls
+    cache.set(cacheKey, response, 21600);
     return res.json(response);
   } catch (err) {
     console.error('AI insights error', err.message);

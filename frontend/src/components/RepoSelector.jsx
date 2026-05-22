@@ -8,12 +8,21 @@ export default function RepoSelector({ onSelect }){
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) { setError('Not authenticated'); return; }
     setLoading(true);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('Please login or use Demo Login');
+      setLoading(false);
+      return;
+    }
     axios.get('/api/github/repos', { headers: { Authorization: `Bearer ${token}` } })
       .then(res => setRepos(res.data))
-      .catch(err => setError(err.response?.data?.error || err.message))
+      .catch(err => {
+        // on failure, try dev repos
+        axios.get('/dev/repos')
+          .then(r => setRepos(r.data))
+          .catch(e => setError(e.response?.data?.error || e.message));
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -22,7 +31,9 @@ export default function RepoSelector({ onSelect }){
     if (idx === '') return onSelect(null);
     const r = repos[parseInt(idx, 10)];
     if (!r) return onSelect(null);
-    onSelect({ owner: r.owner.login, name: r.name, full_name: r.full_name });
+    // support both GitHub API shape and local demo Repo shape
+    if (r.full_name) return onSelect({ owner: r.owner.login || r.owner, name: r.name || r.repoName, full_name: r.full_name });
+    return onSelect({ owner: r.owner, name: r.repoName, full_name: `${r.owner}/${r.repoName}` });
   }
 
   if (loading) return (
@@ -34,12 +45,12 @@ export default function RepoSelector({ onSelect }){
   if (!repos || repos.length === 0) return <div className="text-sm text-slate-500">No repositories available.</div>
 
   return (
-    <div className="w-64">
-      <label className="block text-sm text-slate-600 mb-1">Repository</label>
-      <select onChange={handleChange} defaultValue="" className="w-full rounded-lg border border-slate-200 p-2 bg-white text-sm shadow-sm dark:border-slate-800 dark:bg-slate-800">
+    <div className="w-full min-w-[15rem] md:w-72">
+      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Repository</label>
+      <select onChange={handleChange} defaultValue="" className="w-full rounded-2xl border border-white/70 bg-white/80 px-4 py-3 text-sm shadow-[0_12px_40px_rgba(15,23,42,0.08)] outline-none ring-1 ring-transparent transition placeholder:text-slate-400 focus:border-indigo-300 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100">
         <option value="">-- Select repository --</option>
         {repos.map((r, i) => (
-          <option key={r.id} value={i}>{r.full_name}</option>
+          <option key={r.id || r._id || i} value={i}>{r.full_name || `${r.owner}/${r.repoName}`}</option>
         ))}
       </select>
     </div>

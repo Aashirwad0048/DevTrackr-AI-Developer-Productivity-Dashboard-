@@ -22,6 +22,21 @@ exports.redirectToGitHub = async (req, res) => {
   res.redirect(url);
 };
 
+// Return the GitHub OAuth URL as JSON for clients that need to include Authorization header
+exports.githubUrl = async (req, res) => {
+  const user = req.user;
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  const state = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'dev_secret', { expiresIn: '15m' });
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: CALLBACK_URL,
+    scope: 'repo',
+    state
+  });
+  const url = `https://github.com/login/oauth/authorize?${params.toString()}`;
+  return res.json({ url });
+};
+
 exports.githubCallback = async (req, res) => {
   try {
     const { code, state } = req.query;

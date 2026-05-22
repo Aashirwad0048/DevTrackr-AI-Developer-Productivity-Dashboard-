@@ -82,13 +82,40 @@ async function processRepoAnalytics(token, owner, repo, opts = {}) {
     totalIssues: issueMetrics.totalIssues
   });
 
+  const latestCommitMessages = (commits || [])
+    .slice(0, 10)
+    .map(commit => commit?.commit?.message)
+    .filter(Boolean);
+
+  const openPRTitles = (pulls || [])
+    .filter(pull => pull.state === 'open')
+    .slice(0, 10)
+    .map(pull => pull?.title)
+    .filter(Boolean);
+
+  const openIssueTitles = (issues || [])
+    .filter(issue => !issue.pull_request && issue.state === 'open')
+    .slice(0, 10)
+    .map(issue => issue?.title)
+    .filter(Boolean);
+
+  const recentIssueTitles = (issues || [])
+    .filter(issue => !issue.pull_request)
+    .slice(0, 10)
+    .map(issue => issue?.title)
+    .filter(Boolean);
+
   return {
     commitFrequency: commitFreq.dailyCommits,
     inactiveContributors: inactive.inactiveContributors,
     lastActivity: inactive.lastActivity,
     prMetrics,
     issueMetrics,
-    sprint
+    sprint,
+    latestCommitMessages,
+    openPRTitles,
+    openIssueTitles,
+    recentIssueTitles
   };
 }
 

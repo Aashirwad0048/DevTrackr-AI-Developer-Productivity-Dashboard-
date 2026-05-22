@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import Navbar from '../components/Navbar'
+import Sidebar from '../components/Sidebar'
 import CommitChart from '../components/CommitChart'
 import ConnectGitHub from '../components/ConnectGitHub'
 import RepoSelector from '../components/RepoSelector'
@@ -7,7 +8,7 @@ import axios from '../api/axios'
 import AIInsights from '../components/AIInsights'
 import PRChart from '../components/PRChart'
 import IssueChart from '../components/IssueChart'
-import { MetricCardSkeleton, ChartSkeleton } from '../components/Skeletons'
+import { MetricCardSkeleton, ChartSkeleton, InsightSkeleton } from '../components/Skeletons'
 
 export default function Dashboard(){
   const [selectedRepo, setSelectedRepo] = useState(null);
@@ -18,7 +19,7 @@ export default function Dashboard(){
   const handleSelect = async (repo) => {
     setSelectedRepo(repo);
     setError(null);
-    if (!repo) { setCommits([]); setPulls([]); setIssues([]); return; }
+    if (!repo) { setAnalytics(null); return; }
     const token = localStorage.getItem('token');
     if (!token) { setError('Not authenticated'); return; }
 
@@ -27,16 +28,24 @@ export default function Dashboard(){
       const res = await axios.get(`/api/analytics/repo/${repo.owner}/${repo.name}`, { headers: { Authorization: `Bearer ${token}` } });
       setAnalytics(res.data);
     } catch (err) {
-      setError(err.response?.data?.error || err.message);
+      // try dev analytics fallback
+      try {
+        const dev = await axios.get(`/dev/analytics/${repo.owner}/${repo.name}`);
+        setAnalytics(dev.data);
+      } catch (e) {
+        setError(err.response?.data?.error || err.message);
+      }
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-      <Navbar/>
-      <main className="max-w-7xl mx-auto p-6">
+    <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+      <Sidebar />
+      <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
+        <Navbar />
+        <main className="mx-auto w-full max-w-7xl p-6">
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-2xl font-semibold">Dashboard</h1>
           <div className="flex items-center gap-3">
@@ -57,17 +66,32 @@ export default function Dashboard(){
           ) : (
             selectedRepo && analytics ? (
               <>
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                  <div className="text-sm text-slate-500">Total Commits</div>
-                  <div className="mt-3 text-2xl font-bold">{analytics.commitFrequency ? analytics.commitFrequency.reduce((s,d)=>s+d.count,0) : 0}</div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-slate-500">Total Commits</div>
+                    <div className="mt-3 text-2xl font-bold">{analytics.commitFrequency ? analytics.commitFrequency.reduce((s,d)=>s+d.count,0) : 0}</div>
+                  </div>
+                  <div className="bg-primary-50 text-primary-600 p-3 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h4l3 8 4-16 3 8h4" /></svg>
+                  </div>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                  <div className="text-sm text-slate-500">Open PRs</div>
-                  <div className="mt-3 text-2xl font-bold">{analytics.prMetrics?.openPRs || 0}</div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-slate-500">Open PRs</div>
+                    <div className="mt-3 text-2xl font-bold">{analytics.prMetrics?.openPRs || 0}</div>
+                  </div>
+                  <div className="bg-primary-50 text-primary-600 p-3 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6z" /><path fillRule="evenodd" d="M2 13a6 6 0 1111.996.225A4.5 4.5 0 0012.5 18H3a1 1 0 01-1-1v-3z" clipRule="evenodd"/></svg>
+                  </div>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                  <div className="text-sm text-slate-500">Open Issues</div>
-                  <div className="mt-3 text-2xl font-bold">{analytics.issueMetrics?.openIssues || 0}</div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-slate-500">Open Issues</div>
+                    <div className="mt-3 text-2xl font-bold">{analytics.issueMetrics?.openIssues || 0}</div>
+                  </div>
+                  <div className="bg-primary-50 text-primary-600 p-3 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path d="M8.257 3.099c.765-1.36 2.72-1.36 3.485 0l5.452 9.68A1.75 1.75 0 0116.98 15H3.02a1.75 1.75 0 01-1.713-2.221l5.45-9.68z" /></svg>
+                  </div>
                 </div>
               </>
             ) : (
@@ -80,19 +104,19 @@ export default function Dashboard(){
 
         <section className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            {loading ? <ChartSkeleton /> : analytics ? <CommitChart data={analytics.commitFrequency} /> : <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">No data</div>}
+            {loading ? <ChartSkeleton /> : analytics ? <CommitChart data={analytics.commitFrequency} /> : <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 text-sm text-slate-500">No chart data</div>}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               {loading ? (
                 <>
                   <ChartSkeleton height="h-56" />
                   <ChartSkeleton height="h-56" />
                 </>
-              ) : (
+              ) : analytics ? (
                 <>
-                  <PRChart prMetrics={analytics?.prMetrics} />
-                  <IssueChart issueMetrics={analytics?.issueMetrics} />
+                  <PRChart prMetrics={analytics.prMetrics} />
+                  <IssueChart issueMetrics={analytics.issueMetrics} />
                 </>
-              )}
+              ) : null}
             </div>
           </div>
 
@@ -101,7 +125,8 @@ export default function Dashboard(){
             {loading && !selectedRepo && <div className="mt-4"><InsightSkeleton /></div>}
           </aside>
         </section>
-      </main>
+        </main>
+      </div>
     </div>
   )
 }

@@ -3,6 +3,7 @@ const githubService = require('../services/githubService');
 exports.getRepos = async (req, res) => {
   try {
     const token = req.user?.githubToken || req.query.token;
+    if (!token) return res.status(400).json({ error: 'GitHub not connected' });
     const repos = await githubService.listUserRepos(token);
     res.json(repos);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -12,6 +13,7 @@ exports.getRepo = async (req, res) => {
   try {
     const { name } = req.params;
     const token = req.user?.githubToken || req.query.token;
+    if (!token) return res.status(400).json({ error: 'GitHub not connected' });
     const repo = await githubService.getRepoDetails(token, name);
     res.json(repo);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -22,6 +24,7 @@ exports.getCommits = async (req, res) => {
     const { owner, repo } = req.params;
     const per_page = parseInt(req.query.per_page) || 50;
     const token = req.user?.githubToken || req.query.token;
+    if (!token) return res.status(400).json({ error: 'GitHub not connected' });
     const commits = await githubService.getRepoCommits(token, owner, repo, per_page);
     return res.json({ totalCommits: commits.length, commits });
   } catch (err) {
@@ -36,6 +39,7 @@ exports.getPulls = async (req, res) => {
     const { owner, repo } = req.params;
     const per_page = parseInt(req.query.per_page) || 50;
     const token = req.user?.githubToken || req.query.token;
+    if (!token) return res.status(400).json({ error: 'GitHub not connected' });
     const pulls = await githubService.getRepoPulls(token, owner, repo, per_page);
     const openPRs = pulls.filter(p => p.state === 'open').length;
     const closedPRs = pulls.filter(p => p.state !== 'open').length;
@@ -52,6 +56,7 @@ exports.getIssues = async (req, res) => {
     const { owner, repo } = req.params;
     const per_page = parseInt(req.query.per_page) || 50;
     const token = req.user?.githubToken || req.query.token;
+    if (!token) return res.status(400).json({ error: 'GitHub not connected' });
     const issues = await githubService.getRepoIssues(token, owner, repo, per_page);
     const openIssues = issues.filter(i => !i.pull_request && i.state === 'open').length;
     const closedIssues = issues.filter(i => !i.pull_request && i.state !== 'open').length;
