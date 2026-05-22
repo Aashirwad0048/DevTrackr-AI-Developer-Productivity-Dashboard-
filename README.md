@@ -1,4 +1,4 @@
-# DevTrackr
+# DevTrackr — AI Developer Productivity Dashboard
 
 AI developer productivity dashboard scaffolded workspace.
 
@@ -6,4 +6,7 @@ Folders:
 - backend: Express + Mongoose API
 - frontend: Vite + React dashboard
 
-See package.json files in each folder for scripts.
+This repository contains a starter full-stack scaffold for DevTrackr —
+an AI-powered developer productivity analytics dashboard.
+
+See `backend/package.json` and `frontend/package.json` for scripts.
