@@ -1,0 +1,17 @@
+const analyticsService = require('../services/analyticsService');
+
+exports.getAnalytics = async (req, res) => {
+  try {
+    const { repoId } = req.params;
+    const data = await analyticsService.getAnalyticsForRepo(repoId);
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+};
+
+exports.generateAnalytics = async (req, res) => {
+  try {
+    const payload = req.body;
+    const result = await analyticsService.generateAnalytics(payload);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+};
