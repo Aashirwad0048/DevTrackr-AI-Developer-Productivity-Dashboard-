@@ -4,6 +4,7 @@ import CommitChart from '../components/CommitChart'
 import ConnectGitHub from '../components/ConnectGitHub'
 import RepoSelector from '../components/RepoSelector'
 import axios from '../api/axios'
+import AIInsights from '../components/AIInsights'
 
 export default function Dashboard(){
   const [selectedRepo, setSelectedRepo] = useState(null);
@@ -65,6 +66,10 @@ export default function Dashboard(){
               <div>{issues.filter(i=>i.state==='open' && !i.pull_request).length}</div>
             </div>
           </div>
+        )}
+
+        {selectedRepo && (
+          <AIInsights repo={selectedRepo} />
         )}
 
         {loading ? <div>Loading repo data...</div> : <CommitChart commits={commits} />}
