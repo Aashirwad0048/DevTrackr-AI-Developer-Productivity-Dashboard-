@@ -29,8 +29,7 @@
 
 <br/>
 
-**🚀 Live Demo** &nbsp;·&nbsp; **📖 Docs** &nbsp;·&nbsp; **🐛 Report Bug**
-
+**[🚀 Live Demo](https://dev-trackr-ai-developer-productivit.vercel.app/)** &nbsp;·&nbsp; **[📖 Docs](#-local-setup--installation)** &nbsp;·&nbsp; **[🐛 Report Bug](https://github.com/your-username/DevTrackr/issues)**
 <br/>
 
 </div>
