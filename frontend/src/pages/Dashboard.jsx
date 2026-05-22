@@ -2,6 +2,7 @@ import React from 'react'
 import Navbar from '../components/Navbar'
 import CommitChart from '../components/CommitChart'
 import ConnectGitHub from '../components/ConnectGitHub'
+import RepoList from '../components/RepoList'
 
 export default function Dashboard(){
   return (
@@ -12,6 +13,7 @@ export default function Dashboard(){
         <div style={{margin: '12px 0'}}>
           <ConnectGitHub />
         </div>
+        <RepoList />
         <CommitChart />
       </main>
     </div>
