@@ -15,3 +15,16 @@ exports.generateAnalytics = async (req, res) => {
     res.json(result);
   } catch (err) { res.status(500).json({ error: err.message }); }
 };
+
+exports.generateRepoAnalytics = async (req, res) => {
+  try {
+    const { owner, repo } = req.params;
+    const token = req.user?.githubToken || req.query.token;
+    if (!token) return res.status(401).json({ error: 'No GitHub token' });
+    const data = await analyticsService.processRepoAnalytics(token, owner, repo, { per_page: 100 });
+    return res.json(data);
+  } catch (err) {
+    if (err.response?.status === 401) return res.status(401).json({ error: 'GitHub token expired' });
+    return res.status(500).json({ error: err.message });
+  }
+};
